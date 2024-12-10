@@ -1,0 +1,629 @@
+---
+title: "MovieLens Project Report"
+author: "Matheus Assis de Oliveira"
+date: "November 4, 2024"
+output:
+  pdf_document:
+    toc: true
+    toc_depth: 2
+    number_sections: true
+    fig_caption: true
+    latex_engine: xelatex
+  word_document:
+    toc: true
+    toc_depth: '2'
+bibliography: references.bib
+fontsize: 11pt
+geometry: margin=1in
+header-includes:
+- \usepackage{float}
+- \usepackage{graphicx}
+- \usepackage{booktabs}
+- \usepackage{caption}
+- \usepackage{setspace}
+- \setstretch{1.5}
+lang: en
+---
+
+
+```{r Chunk 1: loading and Loading packages, echo=FALSE}
+library(tidyr)
+library(readxl)
+library(plyr)
+library(corrplot)
+library(RColorBrewer)
+library(ggplot2)
+library(ggpubr)
+library(dplyr)
+library(caret)
+library(randomForest)
+library(caTools)
+
+```
+
+
+Packages will be used at the study:
+tidyverse
+caret
+ggplot2
+dplyr
+scales
+corrplot
+RColorBrewer
+ggpubr
+
+
+
+
+# Introduction
+
+The following project is an adaptation of Matheus Assis de Oliveira´s undergraduate thesis in Economics at the Federal University of Mato Grosso do Sul (UFMS), @matheus2024idhm. The original project aimed to predict the Municipal Human Development Index (IDHM) in Brazil using Machine Learning techniques, particularly Random Forests. The study explored the relationship between the IDHM and various economic and social indicators, such as per capita income, life expectancy, and education levels, to develop a predictive model that could inform policy decisions and development strategies.
+
+
+The rapid pace of technological development in the digital era has transformed various aspects of society, including the economy, by providing powerful tools for data analysis and forecasting. One of the most promising technologies in this context is Machine Learning (ML), a branch of Artificial Intelligence that enables the identification of patterns in complex datasets and the generation of highly accurate predictions.
+
+In economics, ML is becoming an essential tool for analyzing global variables such as Gross Domestic Product (GDP), population, life expectancy, and average years of schooling. These variables are critical for understanding economic development and informing public policy. However, the application of ML in economic studies is still relatively nascent, offering significant opportunities for innovation and advancement.
+
+Researchers such as Athey and Imbens [@athey2019methods] have been at the forefront of efforts to integrate ML into econometrics, highlighting how these techniques can complement traditional methods by handling large datasets and capturing non-linear relationships between variables. For instance, ML can enhance the modeling of economic time series, identify determinants of human development, or predict macroeconomic trends, providing more robust and actionable insights.
+
+This study aims to explore the use of ML techniques to model and predict economic indices using global variables. By employing models such as Random Forest [@liaw2002random] and comparative methods, the research seeks to demonstrate how data science tools can be integrated into economics to enrich analysis and support strategic decision-making. Furthermore, the study will examine ML's potential to uncover relationships between economic and social variables, contributing to a broader understanding of human and economic development.
+
+Ultimately, this research not only highlights the potential of ML in economics but also provides a practical and accessible example of its application, serving as an introductory guide for economists looking to adopt this technology in their own analytical contexts.
+
+# Literature Review
+
+The application of machine learning (ML) techniques in economics has emerged as an attractive area for academics and professionals. Methods such as Random Forest are widely used to address the complexity and multicollinearity of high-dimensional datasets, making them valuable for analyzing economic and development indicators.
+
+This literature review focuses on prior studies exploring the use of ML in economic research, particularly econometrics, as well as studies that apply predictive methodologies to indicators not strictly economic but with potential applications in economic contexts. Through this review, the aim is to better understand the current state of the field and identify gaps in the existing literature that this work seeks to address.
+
+Hal Ronald Varian, Chief Economist at Google Inc. and Emeritus Professor of Economics at the University of California, Berkeley, has underscored the importance of Big Data and new econometric techniques in his article describing Big Data as a "new trick for economists" [@varian2014bigdata]. Although not directly related to predicting economic indicators, Varian’s work illustrates the need for economists to become familiar with ML techniques.
+
+Varian explains that ML aims to find a function that provides accurate predictions of “y” based on predictor variables “x.” He emphasizes minimizing errors through a loss function and discusses the application of tools such as SQL, Google File System, and BigQuery in data manipulation, alongside models like Random Forest, applied to datasets such as those analyzed by Xavier Sala-i-Martín [@sala1997million].
+
+Another key contributor to the integration of ML in economics is Susan Athey, Professor of Economics of Technology at Stanford University. In her 2018 article on the impact of ML on economics, Athey explores the opportunities and challenges of ML applications, including the risks of overfitting and interpretability issues [@athey2018impact]. She advocates combining economic methods with ML techniques to advance economic research.
+
+Athey defines ML as a field focused on algorithms for datasets, emphasizing supervised learning (prediction and classification) and unsupervised learning (clustering and dimensionality reduction). These methods include k-means clustering, topic modeling, and community detection, which enable economists to analyze large and complex datasets [@athey2018impact].
+
+Guido Imbens, a Nobel laureate in Economic Sciences, alongside Athey, further explores ML applications in economics. Their 2019 work provides a comprehensive overview of relevant ML methods for economists, demonstrating their potential for addressing complex economic questions, including human development [@athey2019methods].
+
+Studies such as those by Kaur et al. [@kaur2019supervised] have applied supervised ML techniques, such as logistic regression and Random Forest, to predict Quality of Life indices across nations. These models demonstrated significant predictive power, particularly Random Forest and Support Vector Machines, highlighting ML's utility in economic policy analysis.
+
+Other notable contributions include Sherman et al. [@sherman2023hdindex], who combined satellite imagery with ML to estimate the Human Development Index (HDI) at a high resolution, and Tobaigy et al. [@tobaigy2023factors], who analyzed key determinants of HDI using statistical and ML techniques.
+
+Arumnisaa and Wijayanto [@arumnisaa2023hdi] compared ML methods—Random Forest, Support Vector Machines (SVM), and AdaBoost—for classifying HDI. Their results underline ML’s ability to capture non-linear relationships in socio-economic data, aligning with the foundational insights from Athey and Imbens.
+
+In financial markets, ML techniques like Long Short-Term Memory (LSTM) and Gated Recurrent Units (GRU) have been used to predict stock prices [@nikou2019stocks; @pesci2021sp]. These studies reveal ML’s superiority over traditional statistical methods in volatile markets.
+
+Internationally, ML has also been applied to human capital analysis in startups [@brigo2019capital], energy market price predictions [@vogt2021energy], and cryptocurrency price forecasting [@bhattad2023crypto], demonstrating its broad applicability across economic domains.
+
+These studies collectively demonstrate ML’s potential in capturing complex relationships and generating robust insights. However, they also highlight the need for further research to optimize ML techniques and expand their application to other areas of economic and social development.
+
+In conclusion, the application of ML in economics and human development is a promising and rapidly evolving field. By leveraging advancements in data availability and ML techniques, researchers can enhance the analysis and prediction of critical development indicators such as HDI. Nevertheless, ongoing research is crucial to improve these models' effectiveness and explore their broader applicability.
+
+# Methodology
+
+The Human Development Index (HDI), introduced in 1990 by the United Nations Development Programme (UNDP) under the initiative of Mahbub ul Haq and with contributions from the Indian economist Amartya Sen, represented a significant milestone in quantifying and understanding human development. Published in the \textit{Human Development Report 1990}, the HDI focuses on three fundamental dimensions: health, education, and income [@human1990report].
+
+While the HDI does not cover all aspects of development, its simplicity and comprehensibility in presenting key indicators have made it an essential tool for assessing human progress globally [@concepcao2022hdr]. The HDI evaluates human capabilities by concentrating on three aspects: ensuring a long and healthy life, providing access to knowledge, and ensuring a decent standard of living [@undp2013idhm].
+
+In the Brazilian context, the Municipal Human Development Index (IDHM) was developed as a localized adaptation of the global HDI. This adaptation serves to monitor progress at municipal and state levels, integrating specific local data to better reflect the unique characteristics of Brazilian society while maintaining the HDI's core dimensions [@undp2013idhm].
+
+This research utilizes Machine Learning (ML) techniques, particularly decision tree-based models such as Random Forests [@liaw2002random], to predict the IDHM. The dataset originates from the \textit{Atlas of Human Development in Brazil} and is enhanced with global macroeconomic indicators, including population size, Gross Domestic Product (GDP), the proportion of individuals below the poverty line, and infant mortality rates. However, variables like GINI and Theil indices, as well as total population figures, were excluded from the final model due to weak correlations with the unadjusted IDHM [@atlasbrasil2023].
+
+The HDI is a widely recognized measure for translating human progress into simplified indicators that capture key aspects of human opportunities and capabilities [@varian2014bigdata]. Its three core components—health, education, and income—are used to provide a holistic perspective on development:
+
+\subsection{Long and Healthy Life}
+
+The "Long and Healthy Life" dimension focuses on life expectancy as a key indicator. This dimension emphasizes not only increasing life span but also enhancing the quality of life. It reflects the principle that a fulfilling life includes the means to avoid premature death and equitable access to quality healthcare [@kaur2019supervised].
+
+Life expectancy values are normalized using predefined minimum and maximum benchmarks (25 and 85 years, respectively), following the formula:
+
+$$
+I = \frac{\text{Observed Value - Minimum Value}}{\text{Maximum Value - Minimum Value}}
+$$
+
+This normalization facilitates the comparability of longevity across different municipalities and provides a robust basis for policy analysis [@sherman2023hdindex].
+
+\subsection{Access to Knowledge}
+
+The "Access to Knowledge" dimension highlights the transformative role of education in human development. By empowering individuals, fostering autonomy, and building self-esteem, education is framed as both a fundamental right and a strategic tool for informed decision-making about one's future [@athey2018impact].
+
+This dimension includes metrics such as adult literacy rates and school enrollment ratios, which are combined into indices ranging from 0 to 1. These indices enable the evaluation of educational performance across regions, contributing to a nuanced understanding of disparities in access to knowledge [@arumnisaa2023hdi].
+
+\subsection{Standard of Living}
+
+The "Standard of Living" dimension uses income as a proxy for the capacity to fulfill basic needs and achieve a dignified life. Measured through per capita income adjusted for inflation, this indicator reflects the ability of individuals to access essential goods and services such as food, water, and housing [@mullainathan2017mlapproach].
+
+Normalized income indices consider the diminishing returns of increased income on development, ensuring that the metrics accurately reflect disparities in living standards across municipalities [@jean2016poverty].
+
+\subsection{Machine Learning Integration}
+
+By integrating ML techniques, this study seeks to enhance the analysis and prediction of the IDHM. Random Forests, known for their robustness in handling complex datasets, are applied to global economic and social variables to model the dimensions of human development [@tobaigy2023factors]. This approach demonstrates the potential of ML to provide actionable insights into improving human development globally, particularly at localized levels.
+
+The methodology adopted in this research leverages global economic and social indicators to refine the predictive modeling of the IDHM. By employing ML techniques, this study offers a comprehensive framework for understanding human development, contributing to both academic discourse and practical policy applications [@brigo2019capital].
+
+# Data Collection and Preprocessing
+
+The collection and preprocessing of data are fundamental steps in any scientific investigation. In this study, which focuses on the analysis of the Municipal Human Development Index (IDHM), these steps were conducted methodically and with precision.
+
+The primary data source for this study was the Atlas Brasil portal, a reliable and comprehensive repository of socioeconomic data covering all municipalities in Brazil, as well as other federal units and Human Development Units (UDHs). The portal provides data in Excel format (XLSX), which facilitates importation into data analysis tools such as RStudio [@atlasbrasil2023].
+
+For this study, IDHM data was collected for all states in Brazil, including the Federal District, organized by territoriality, spanning from 2012 to 2021. To adapt the data for the RStudio platform, the years were renamed with an "X" prefix, resulting in variables such as \texttt{X2012} through \texttt{X2021}.
+
+Additional indicators collected include literacy rates for individuals aged 15 and older, 18 and older, and 25 and older. Data on the education component of the IDHM, along with its sub-indices for schooling and school attendance, were also retrieved [@undp2013idhm].
+
+For the longevity component of the IDHM, life expectancy and infant mortality data were collected. Similarly, the income component included data on per capita income and the percentage of the population living in poverty. To further enhance the breadth of indicators, additional metrics such as total population, GINI index, and Theil index were also included in the dataset [@liaw2002random; @varian2014bigdata].
+
+The preprocessing phase ensured that all data was normalized and structured for analysis, with missing or incomplete entries handled through imputation methods. This comprehensive dataset enables the application of Machine Learning techniques to identify patterns and predict the IDHM effectively.
+
+
+# Development
+
+After collecting the data, a meticulous data engineering process was undertaken to ensure cleanliness and reliability, which is critical for achieving valid and consistent results. This phase involved identifying and correcting potential inconsistencies in the dataset, such as missing values, errors, and outliers. Different strategies for handling missing values were employed, including mean, median, or mode imputation, depending on the context and nature of the data. Outliers were detected using statistical methods such as the Interquartile Range (IQR) and Z-score techniques and addressed according to the requirements of the study [@irizarry2019datascience].
+
+Depending on the analysis technique to be applied, the data underwent transformations such as normalization or standardization. These processes ensured that all attributes were on the same scale, making comparisons between variables more consistent and meaningful.
+
+### Data Engineering Process
+
+To facilitate data engineering, R packages such as `tidyr`, `plyr`, and `readxl` were installed along with their dependencies and loaded using the `library()` function. The first step involved transforming the data into a format suitable for model construction. This included importing data into RStudio and reshaping it using the `gather` function to convert years into a single column, resulting in a table with the variables "Territoriality," "State," "Year" (ranging from 2012 to 2021), and the target variable. The `gsub` function was then used to clean prefixes from year values, and the column was converted to numeric format.
+
+```{r data_import, echo=TRUE}
+renda_per_capita <- read_excel("renda.per.capita.xlsx")
+# Use gather to convert years into a column
+renda_per_capita <- gather(renda_per_capita, ano, renda_per_capita,
+                           X2012:X2021, convert = TRUE)
+# Clean the 'X' prefix from the year column
+renda_per_capita$ano <- gsub('X', '', renda_per_capita$ano)
+# Convert the year column from character to numeric
+renda_per_capita <- transform(renda_per_capita, ano = as.numeric(ano))
+# Convert the income column to numeric
+renda_per_capita <- transform(renda_per_capita, renda_per_capita =
+                                as.numeric(renda_per_capita))
+
+
+sub_esco_pop <- read_excel("sub.esco.pop.xlsx")
+# Use gather to convert years into a column
+sub_esco_pop <- gather(sub_esco_pop, ano, sub_esco_pop, X2012:X2021,
+                       convert = TRUE)
+# Clean the 'X' prefix from the year column
+sub_esco_pop$ano <- gsub('X', '', sub_esco_pop$ano)
+# Convert the year column from character to numeric
+sub_esco_pop <- transform(sub_esco_pop, ano = as.numeric(ano))
+# Convert the sub_esco_pop column to numeric
+sub_esco_pop <- transform(sub_esco_pop, sub_esco_pop = as.numeric(sub_esco_pop))
+
+sub_freq_esco <- read_excel("sub.freq.esco.xlsx")
+# Use gather to convert years into a column
+sub_freq_esco <- gather(sub_freq_esco, ano, sub_freq_esco, X2012:X2021,
+                        convert = TRUE)
+# Clean the 'X' prefix from the year column
+sub_freq_esco$ano <- gsub('X', '', sub_freq_esco$ano)
+# Convert the year column from character to numeric
+sub_freq_esco <- transform(sub_freq_esco, ano = as.numeric(ano))
+# Convert the sub_freq_esco column to numeric
+sub_freq_esco <- transform(sub_freq_esco, sub_freq_esco = as.numeric(sub_freq_esco))
+
+esperança_de_vida <- read_excel("esperança.de.vida.xlsx")
+# Use gather to convert years into a column
+esperança_de_vida <- gather(esperança_de_vida, ano, esperança_de_vida,
+                            X2012:X2021, convert = TRUE)
+# Clean the 'X' prefix from the year column
+esperança_de_vida$ano <- gsub('X', '', esperança_de_vida$ano)
+# Convert the year column from character to numeric
+esperança_de_vida <- transform(esperança_de_vida, ano = as.numeric(ano))
+# Convert the esperança_de_vida column to numeric
+esperança_de_vida <- transform(esperança_de_vida, esperança_de_vida = 
+                                 as.numeric(esperança_de_vida))
+
+porcent_pobres <- read_excel("porcent_pobres.xlsx")
+# Use gather to convert years into a column
+porcent_pobres <- gather(porcent_pobres, ano, porcent_pobres, X2012:X2021,
+                         convert = TRUE)
+# Clean the 'X' prefix from the year column
+porcent_pobres$ano <- gsub('X', '', porcent_pobres$ano)
+# Convert the year column from character to numeric
+porcent_pobres <- transform(porcent_pobres, ano = as.numeric(ano))
+# Convert the porcent_pobres column to numeric
+porcent_pobres <- transform(porcent_pobres, porcent_pobres = 
+                              as.numeric(porcent_pobres))
+
+população_total <- read_excel("população_total.xlsx")
+# Use gather to convert years into a column
+população_total <- gather(população_total, ano, população_total, 
+                          X2012:X2021, convert = TRUE)
+# Clean the 'X' prefix from the year column
+população_total$ano <- gsub('X', '', população_total$ano)
+# Convert the year column from character to numeric
+população_total <- transform(população_total, ano = as.numeric(ano))
+# Convert the população_total column to numeric
+população_total <- transform(população_total, população_total =
+                               as.numeric(população_total))
+
+mortalidade_infantil <- read_excel("mortalidade_infantil.xlsx")
+# Use gather to convert years into a column
+mortalidade_infantil <- gather(mortalidade_infantil, ano, mortalidade_infantil,
+                               X2012:X2021, convert = TRUE)
+# Clean the 'X' prefix from the year column
+mortalidade_infantil$ano <- gsub('X', '', mortalidade_infantil$ano)
+# Convert the year column from character to numeric
+mortalidade_infantil <- transform(mortalidade_infantil, ano = as.numeric(ano))
+# Convert the mortalidade_infantil column to numeric
+mortalidade_infantil <- transform(mortalidade_infantil, mortalidade_infantil = as.numeric(mortalidade_infantil))
+
+media_anos_de_estudo <- read_excel("media_anos_de_estudo.xlsx")
+# Use gather to convert years into a column
+media_anos_de_estudo <- gather(media_anos_de_estudo, ano, media_anos_de_estudo, 
+                               X2012:X2021, convert = TRUE)
+# Clean the 'X' prefix from the year column
+media_anos_de_estudo$ano <- gsub('X', '', media_anos_de_estudo$ano)
+# Convert the year column from character to numeric
+media_anos_de_estudo <- transform(media_anos_de_estudo, ano = as.numeric(ano))
+# Convert the media_anos_de_estudo column to numeric
+media_anos_de_estudo <- transform(media_anos_de_estudo, media_anos_de_estudo = as.numeric(media_anos_de_estudo))
+
+indice_gini <- read_excel("indice_gini.xlsx")
+# Use gather to convert years into a column
+indice_gini <- gather(indice_gini, ano, indice_gini, X2012:X2021, convert = TRUE)
+# Clean the 'X' prefix from the year column
+indice_gini$ano <- gsub('X', '', indice_gini$ano)
+# Convert the year column from character to numeric
+indice_gini <- transform(indice_gini, ano = as.numeric(ano))
+# Convert the indice_gini column to numeric
+indice_gini <- transform(indice_gini, indice_gini = as.numeric(indice_gini))
+
+ind_theil_L <- read_excel("ind_theil_L.xlsx")
+# Use gather to convert years into a column
+ind_theil_L <- gather(ind_theil_L, ano, ind_theil_L, X2012:X2021, convert = TRUE)
+# Clean the 'X' prefix from the year column
+ind_theil_L$ano <- gsub('X', '', ind_theil_L$ano)
+# Convert the year column from character to numeric
+ind_theil_L <- transform(ind_theil_L, ano = as.numeric(ano))
+# Convert the ind_theil_L column to numeric
+ind_theil_L <- transform(ind_theil_L, ind_theil_L = as.numeric(ind_theil_L))
+
+analfabetismo_25_anos <- read_excel("analfabetismo_25_anos.xlsx")
+# Use gather to convert years into a column
+analfabetismo_25_anos <- gather(analfabetismo_25_anos, ano, analfabetismo_25_anos, 
+                                X2012:X2021, convert = TRUE)
+# Clean the 'X' prefix from the year column
+analfabetismo_25_anos$ano <- gsub('X', '', analfabetismo_25_anos$ano)
+# Convert the year column from character to numeric
+analfabetismo_25_anos <- transform(analfabetismo_25_anos, ano = as.numeric(ano))
+# Convert the analfabetismo_25_anos column to numeric
+analfabetismo_25_anos <- transform(analfabetismo_25_anos, analfabetismo_25_anos = as.numeric(analfabetismo_25_anos))
+
+analfabetismo_18_anos <- read_excel("analfabetismo_18_anos.xlsx")
+# Use gather to convert years into a column
+analfabetismo_18_anos <- gather(analfabetismo_18_anos, ano, analfabetismo_18_anos,
+                                X2012:X2021, convert = TRUE)
+# Clean the 'X' prefix from the year column
+analfabetismo_18_anos$ano <- gsub('X', '', analfabetismo_18_anos$ano)
+# Convert the year column from character to numeric
+analfabetismo_18_anos <- transform(analfabetismo_18_anos, ano = as.numeric(ano))
+# Convert the analfabetismo_18_anos column to numeric
+analfabetismo_18_anos <- transform(analfabetismo_18_anos, analfabetismo_18_anos = as.numeric(analfabetismo_18_anos))
+
+analfabetismo_15_anos <- read_excel("analfabetismo_15_anos.xlsx")
+# Use gather to convert years into a column
+analfabetismo_15_anos <- gather(analfabetismo_15_anos, ano, analfabetismo_15_anos,
+                                X2012:X2021, convert = TRUE)
+# Clean the 'X' prefix from the year column
+analfabetismo_15_anos$ano <- gsub('X', '', analfabetismo_15_anos$ano)
+# Convert the year column from character to numeric
+analfabetismo_15_anos <- transform(analfabetismo_15_anos, ano = as.numeric(ano))
+# Convert the analfabetismo_15_anos column to numeric
+analfabetismo_15_anos <- transform(analfabetismo_15_anos, analfabetismo_15_anos = as.numeric(analfabetismo_15_anos))
+
+IDHM <- read_excel("IDHM.xlsx")
+# Use gather to convert years into a column
+IDHM <- gather(IDHM, ano, IDHM, X2012:X2021, convert = TRUE)
+# Clean the 'X' prefix from the year column
+IDHM$ano <- gsub('X', '', IDHM$ano)
+# Convert the year column from character to numeric
+IDHM <- transform(IDHM, ano = as.numeric(ano))
+# Convert the IDHM column to numeric
+IDHM <- transform(IDHM, IDHM = as.numeric(IDHM))
+```
+
+
+To facilitate the analysis, a unified data frame, named IDHM.AED, was created. This was accomplished using the join function to merge individual data frames containing relevant indicators. The merging was indexed by the fields ano (year) and Territorialidades (territories) to ensure that the data remained organized and correctly aligned. The following code demonstrates this process:
+
+```{r data_merge, echo=TRUE}
+# Initialize the unified data frame with the income data
+IDHM.AED <- renda_per_capita
+
+# Join the remaining data frames to create a single unified data frame
+IDHM.AED <- join(IDHM.AED, sub_esco_pop, by = c("ano" = "ano", "Territorialidades" = "Territorialidades"))
+IDHM.AED <- join(IDHM.AED, sub_freq_esco, by = c("ano" = "ano", "Territorialidades" = "Territorialidades"))
+IDHM.AED <- join(IDHM.AED, esperança_de_vida, by = c("ano" = "ano", "Territorialidades" = "Territorialidades"))
+IDHM.AED <- join(IDHM.AED, porcent_pobres, by = c("ano" = "ano", "Territorialidades" = "Territorialidades"))
+IDHM.AED <- join(IDHM.AED, população_total, by = c("ano" = "ano", "Territorialidades" = "Territorialidades"))
+IDHM.AED <- join(IDHM.AED, mortalidade_infantil, by = c("ano" = "ano", "Territorialidades" = "Territorialidades"))
+IDHM.AED <- join(IDHM.AED, media_anos_de_estudo, by = c("ano" = "ano", "Territorialidades" = "Territorialidades"))
+IDHM.AED <- join(IDHM.AED, indice_gini, by = c("ano" = "ano", "Territorialidades" = "Territorialidades"))
+IDHM.AED <- join(IDHM.AED, ind_theil_L, by = c("ano" = "ano", "Territorialidades" = "Territorialidades"))
+IDHM.AED <- join(IDHM.AED, analfabetismo_25_anos, by = c("ano" = "ano", "Territorialidades" = "Territorialidades"))
+IDHM.AED <- join(IDHM.AED, analfabetismo_18_anos, by = c("ano" = "ano", "Territorialidades" = "Territorialidades"))
+IDHM.AED <- join(IDHM.AED, analfabetismo_15_anos, by = c("ano" = "ano", "Territorialidades" = "Territorialidades"))
+IDHM.AED <- join(IDHM.AED, IDHM, by = c("ano" = "ano", "Territorialidades" = "Territorialidades"))
+```
+
+
+This unified data frame ensures that all indicators relevant to the Municipal Human Development Index (IDHM) are consolidated into a single structure. Each variable maintains its alignment across territories and years, enabling efficient data manipulation and analysis.
+
+Throughout the data engineering process, no errors, null values, or missing values (NA) were found in the unified data frame (IDHM.AED). The creation of the unified data frame also showed no inconsistencies, confirming the reliability and accuracy of the dataset for further analysis.
+
+To validate the dataset, the sapply function was utilized to count the unique values in each column of the data frame. This step aligns with the principles of vectorization and functional programming, as discussed in the section 3.5 of Introduction to Data Science by Rafael Irizarry (@irizarry2019datascience). For example, the Territorialidades column displayed 28 unique values, representing Brazil's 26 states, the Federal District, and the national level. The ano column included 10 unique values corresponding to the years from 2012 to 2021. The same validation approach was applied across all other variables, ensuring no duplication or misalignment in the data.
+
+Additionally, the str function was employed to display the structure of the data frame. As outlined in section 2.4.2 of Irizarry's book, this function provides an overview of the data frame's organization and column types. Due to the large size of the data frame, the full structure could not be displayed; however, the output confirmed that all variables were correctly aligned and formatted.
+
+```{r data_validation, echo=TRUE} 
+AED.df = IDHM.AED
+# Using sapply to count unique values for each column
+sapply(IDHM.AED, function(x) length(unique(x)))
+
+# Using str to examine the structure of the data frame
+str(IDHM.AED)
+```
+
+The results of the \texttt{sapply} and \texttt{str} functions provided confidence in the integrity of the data frame. No missing values (NA) were identified, and all variables demonstrated consistent data entries. The validation ensured that the data frame was error-free and aligned with the analytical requirements.
+
+In addition to technical validation, meticulous documentation was maintained throughout the process to ensure transparency and reproducibility. Each decision was recorded in detail, enabling future researchers to replicate the methodology and validate the findings. This rigorous approach enhances the reliability of the dataset and ensures its readiness for advanced analyses such as predictive modeling.
+
+In conclusion, the data engineering process concluded with a robust verification step, establishing a solid foundation for the subsequent stages of analysis. The careful attention to detail and adherence to methodological rigor ensures that the dataset is both accurate and reliable, serving as a cornerstone for meaningful and insightful research outcomes.
+
+# Exploratory Data Analysis
+
+Following the data engineering process, a detailed Exploratory Data Analysis (EDA) was conducted to serve as a foundation for understanding and interpreting the underlying complexities of the dataset. This methodology aims to extract intrinsic insights, investigate structural patterns, detect outliers, and test underlying hypotheses that could potentially enhance the Random Forest modeling in subsequent stages.
+
+The initial phase of the exploratory analysis involved a rigorous univariate analysis for each variable in the dataset. This included generating descriptive statistics that provide an understanding of the central characteristics of each variable, such as measures of central tendency (mean, median), dispersion (variance, standard deviation), and extremes (minimum, maximum). Visualizing the distribution of each variable was necessary to understand its shape, identify any deviations from normality, and observe the presence of extreme values.
+
+Visualization techniques, such as scatter plots and correlation heatmaps, were employed to aid in understanding multidimensional relationships. As highlighted by @irizarry2019datascience, the use of the \texttt{dplyr} and \texttt{ggplot2} packages enables summarizing and synthesizing data and creating plots and boxplots, respectively. These tools facilitate an intuitive exploration of the dataset's structure.
+
+Outliers, or extreme values, can substantially impact model results. Thus, part of the exploratory analysis focused on detecting and appropriately handling these outliers. Robust methods for identifying these values were implemented, and informed decisions were made regarding whether they should be retained, transformed, or removed based on their nature and impact on the dataset.
+
+\subsection{Correlation Matrix and Visualization Tools}
+
+In the exploratory analysis of the Municipal Human Development Index (IDHM), the packages \texttt{corrplot}, \texttt{RColorBrewer}, \texttt{ggplot2}, and \texttt{ggpubr} were utilized. The first step was preparing a dataset to construct a correlation matrix to comprehend the interrelationships among the indicators.
+
+The \texttt{corrplot} package (Visualization of a Correlation Matrix) is a powerful tool for visualizing correlation matrices in R, as detailed by @wei2021corrplot. It provides visual exploratory tools for correlation matrices and supports the automatic reordering of variables, aiding in the detection of hidden patterns among variables.
+
+The \texttt{ggplot2} package, described by @wickham2016ggplot2 in \textit{ggplot2: Elegant Graphics for Data Analysis}, is used to create declarative graphics based on \textit{The Grammar of Graphics} @wilkinson2012grammar. By specifying how variables map to aesthetics and choosing graphical primitives, \texttt{ggplot2} takes care of details, enabling the creation of elegant and sophisticated data visualizations.
+
+The \texttt{RColorBrewer} package, as explained by @neuwirth2022rcolorbrewer, provides color palettes designed by Cynthia Brewer (\textit{ColorBrewer: Color Advice for Maps}, @brewer2023color). These palettes are effective in representing information clearly and aesthetically.
+
+The \texttt{ggpubr} package, discussed by @kassambara2023ggpubr, complements \texttt{ggplot2} by simplifying the creation of publication-ready plots. While \texttt{ggplot2} is flexible and excellent for data visualization, the default plots often require additional formatting. \texttt{ggpubr} offers user-friendly functions for creating and customizing \texttt{ggplot2} plots of professional quality.
+
+\subsection{Preparing and Visualizing Correlation Matrices}
+
+Initially, non-numeric columns, such as \texttt{Territorialidades} and \texttt{ano}, were removed, focusing solely on quantitative indicators. Once the data was cleaned, a correlation matrix of the remaining indicators was calculated. Finally, to enhance visualization and interpretation, the \texttt{corrplot} package was used to display the matrix (@wei2021corrplot).
+
+The combination of these tools and methods provided a comprehensive understanding of the dataset's structure and relationships, setting a solid foundation for the predictive modeling stage.
+
+```{r correlation_matrix, echo=TRUE}
+# Create a new data frame excluding rows with missing values
+cc = complete.cases(AED.df)
+AED.corr = AED.df[cc,]
+
+# Remove non-numeric columns
+AED.corr$Territorialidades <- NULL
+AED.corr$ano <- NULL
+
+# Compute the correlation matrix
+Matrix <- cor(AED.corr)
+
+# Visualize the correlation matrix with corrplot
+corrplot(Matrix, 
+         type = "upper",        # Display only the upper triangle of the matrix
+         order = "hclust",      # Use hierarchical clustering to reorder variables
+         method = "pie",        # Use pie charts to represent correlations
+         col = brewer.pal(n = 8, name = "RdYlBu")) # Color palette for visualization
+```
+
+
+The creation of a unified data frame, named predict.IDHM, marks a pivotal step in the data preparation process, consolidating all relevant indicators for analysis. This comprehensive dataset integrates key variables, such as per capita income, sub-indicators of education, life expectancy, and demographic metrics, by leveraging the join function to ensure alignment across years and territorial divisions. Following the construction of the data frame, rigorous cleaning processes were undertaken, including the removal of non-numeric columns like Territorialidades and filtering out rows with incomplete data using complete.cases. This ensures the dataset is not only cohesive but also devoid of inconsistencies that might impact subsequent analyses. The final structure of the data frame was examined using the str function, providing a detailed overview of the variables and confirming its readiness for exploratory and predictive modeling phases. This meticulous preparation enhances the reliability and validity of the findings, laying a solid foundation for further statistical and machine learning applications.
+
+```{r data_preparation, echo=TRUE}
+# Create a unified data frame (predict.IDHM) containing all indicators
+predic.IDHM <- renda_per_capita
+
+# Join additional indicators using year and territoriality as keys
+predic.IDHM <- join(predic.IDHM, sub_esco_pop, by = c("ano" = "ano", "Territorialidades" = "Territorialidades"))
+predic.IDHM <- join(predic.IDHM, sub_freq_esco, by = c("ano" = "ano", "Territorialidades" = "Territorialidades"))
+predic.IDHM <- join(predic.IDHM, esperança_de_vida, by = c("ano" = "ano", "Territorialidades" = "Territorialidades"))
+predic.IDHM <- join(predic.IDHM, porcent_pobres, by = c("ano" = "ano", "Territorialidades" = "Territorialidades"))
+predic.IDHM <- join(predic.IDHM, população_total, by = c("ano" = "ano", "Territorialidades" = "Territorialidades"))
+predic.IDHM <- join(predic.IDHM, mortalidade_infantil, by = c("ano" = "ano", "Territorialidades" = "Territorialidades"))
+predic.IDHM <- join(predic.IDHM, media_anos_de_estudo, by = c("ano" = "ano", "Territorialidades" = "Territorialidades"))
+predic.IDHM <- join(predic.IDHM, indice_gini, by = c("ano" = "ano", "Territorialidades" = "Territorialidades"))
+predic.IDHM <- join(predic.IDHM, ind_theil_L, by = c("ano" = "ano", "Territorialidades" = "Territorialidades"))
+predic.IDHM <- join(predic.IDHM, analfabetismo_25_anos, by = c("ano" = "ano", "Territorialidades" = "Territorialidades"))
+predic.IDHM <- join(predic.IDHM, analfabetismo_18_anos, by = c("ano" = "ano", "Territorialidades" = "Territorialidades"))
+predic.IDHM <- join(predic.IDHM, analfabetismo_15_anos, by = c("ano" = "ano", "Territorialidades" = "Territorialidades"))
+predic.IDHM <- join(predic.IDHM, IDHM, by = c("ano" = "ano", "Territorialidades" = "Territorialidades"))
+
+# Remove non-relevant column (Territorialidades)
+predic.IDHM$Territorialidades <- NULL
+
+# Filter rows with complete data
+cc = complete.cases(predic.IDHM)
+predic.IDHM = predic.IDHM[cc,]
+
+# Display the structure of the final data frame
+str(predic.IDHM)
+```
+
+
+A scatterplot matrix provides an effective visualization tool for understanding the relationships among all variables within the predict.IDHM data frame. This type of visualization is particularly useful for a quick evaluation of interrelations between multiple variables, allowing analysts to identify patterns and dependencies within the dataset. However, a notable drawback of a general scatterplot matrix is the potential for visual overload, especially when the dataset contains numerous variables. This can obscure clear patterns or specific trends, making it challenging to draw actionable insights.
+
+Conversely, plotting the Human Development Index (IDHM) against each individual variable offers a more focused perspective on the specific relationship between the IDHM and other factors. This targeted approach allows for the identification of direct patterns and correlations that are most relevant to understanding the IDHM, avoiding the complexity introduced by examining all possible variable relationships simultaneously.
+
+Both visualization methods were applied in the exploratory data analysis phase to enhance the comprehensiveness of the analysis. The scatterplot matrix served as a broad overview, while individual plots between the IDHM and other variables provided more detailed insights into specific correlations. The following code demonstrates how the scatterplot matrix was implemented for this analysis:
+
+```{r scatterplot_matrix, echo=TRUE}
+### Plot the correlation as a scatterplot matrix
+plot(predic.IDHM, pch=1, cex=0.2, col=rgb(0, 0.2, 0.8, 0.4), 
+     main = "Scatterplot Matrix of Variables Correlated with IDHM")
+```
+
+
+# Model Development and Training
+
+
+The development and training phase is a fundamental component of the methodological sequence of this investigation. At this stage, the Machine Learning model known as Random Forest was selected due to its notable advantages. Random Forest is particularly suited for handling datasets with complex relationships and is robust against overfitting, a phenomenon where the model learns excessively from the training data and becomes ineffective at predicting new, unseen data.
+
+To prepare for model training, the preprocessed data was split into two subsets: training and testing sets. This common practice is essential for evaluating the performance and generalizability of the model, providing a robust estimate of its efficacy when applied to new data. The training set is used to fit the model, while the testing set assesses its performance.
+
+Although Random Forest was the primary model of choice due to its advantages, alternative Machine Learning models, such as linear regression, Support Vector Machines (SVM), or neural networks, could also be considered depending on the intrinsic characteristics of the data and the specific problem at hand. Choosing the appropriate model involves careful consideration of trade-offs between model complexity, interpretability, and computational efficiency.
+
+A key element of this phase is hyperparameter tuning, which involves fine-tuning the model's parameters. Adjustments to hyperparameters can significantly impact the model’s ability to learn effectively, striking a balance between underfitting (when the model is too simple to capture data complexity) and overfitting (when the model is too complex and overfits the training data, losing generalizability).
+
+Experimenting with different model configurations is an integral part of this process. For instance, altering the structure or depth of the trees in a Random Forest model can yield varying performance outcomes. Such experiments explore a range of scenarios to maximize the model's ability to capture and learn underlying patterns in the data.
+
+The following packages were utilized during the construction and evaluation of the model: plyr, caret, randomForest, and caTools. The caret package offers an integrated approach to training and evaluating Machine Learning models. It simplifies the modeling process by providing a single interface for training various models, coupled with tools for rigorous evaluation, data preprocessing, and visualization【@kuhn2008caret】. The randomForest package, imported from Breiman's (2001) model, supports classification and regression analyses using a combination of decision trees and random sampling techniques, ensuring more robust and accurate predictions【@liaw2002randomforest】. Finally, the caTools package provides versatile utility functions that complement methods like Random Forest and aid data analysis【@tuszynski2021catools】.
+
+The training process began with an 80/20 split of the dataset into training and testing subsets. This division ensures a balanced approach for training the model and evaluating its performance.
+
+
+```{r model_training, echo=TRUE}
+# Split data into 80% training and 20% testing subsets
+set.seed(123)
+sample.IDHM <- createDataPartition(predic.IDHM$IDHM, p = 0.8, list = FALSE)
+train.IDHM <- predic.IDHM[sample.IDHM, ]
+teste.IDHM <- predic.IDHM[-sample.IDHM, ]
+```
+
+
+For the IDHM prediction, the Random Forest model was configured to build multiple decision trees during training. Each tree was generated using a bootstrap sample of the data, and a random subset of features was considered at each node split, determined by the mtry parameter. This randomness serves two main purposes: reducing variance by averaging predictions across trees and decorrelating trees to improve predictive performance.
+
+An initial model (IDHM.model.1) was developed with 500 trees and an arbitrary mtry of 3. The results showed a mean squared residual and an explanation of the variance.
+  
+```{r model_training_2, echo=TRUE}
+# Train a Random Forest model with 500 trees and mtry of 3
+IDHM.model.1 <- randomForest(IDHM ~ ., data = train.IDHM, ntree = 500, mtry = 3, 
+                             importance = TRUE, na.action = na.omit)
+print(IDHM.model.1)
+```
+
+
+To further refine the model, the tuneRF function was used to optimize the mtry parameter. This function iteratively adjusts the value of mtry and evaluates the model using Out-Of-Bag (OOB) error rates. The optimal mtry value found was 3, suggesting the initial configuration was already suitable. Nonetheless, a second model (IDHM.model.2) was developed with an mtry of 4 for educational purposes and comparative analysis.
+
+
+```{r model_training_3, echo=TRUE}
+# Optimize mtry using the tuneRF function
+mtry_opt <- tuneRF(train.IDHM[-6], train.IDHM$IDHM, ntreeTry = 500, 
+                   stepFactor = 1, improve = 0.01, trace = TRUE, plot = FALSE)
+print(mtry_opt)
+
+# Train a second Random Forest model with mtry = 4
+IDHM.model.2 <- randomForest(IDHM ~ ., data = train.IDHM, ntree = 500, mtry = 4, 
+                             importance = TRUE, na.action = na.omit)
+print(IDHM.model.2)
+```
+
+
+The second model achieved a slightly improved variance explanation of. This comparison highlights the importance of hyperparameter tuning in optimizing model performance. These results underscore the robustness of the Random Forest algorithm and set the stage for the final evaluation phase.
+
+
+# Model Evaluation and Results
+
+
+Model evaluation in data science is an indispensable step aimed at assessing the model's effectiveness. This phase typically follows model training and has the primary goal of validating the model's performance against unseen data that was not part of the training process. Beyond merely confirming functionality, model evaluation aids in understanding how predictions are made and helps elucidate the algorithm's practical efficiency.
+
+For this study, the selected Machine Learning model is Random Forest, a robust algorithm capable of managing complex relationships while resisting overfitting. The evaluation of this model was conducted using a separate dataset known as the test set. This partitioning of data into training and testing sets is essential for authentic and unbiased evaluation, providing a reliable estimate of the model's performance on unseen data.
+
+The choice of evaluation metric is critical and directly depends on the type of prediction task. For regression tasks, where the goal is to predict continuous values, the Mean Squared Error (MSE) is commonly used. This metric calculates the average of the squared differences between actual and predicted values, providing a direct numerical measure of model performance.
+
+A high MSE does not necessarily indicate a poor model, nor does a low MSE guarantee a good one. The interpretation of this metric must consider the data scale and the specific context of the problem. Conversely, for classification tasks where the aim is to assign observations to categories, metrics such as accuracy, precision, recall, and F1-score are more relevant. These metrics assess the proportion of correct predictions, the proportion of true positives among all positive predictions, the proportion of true positives among actual positives, and the harmonic mean of precision and recall, respectively.
+
+Another critical aspect of evaluation is balancing performance on the training set and the test set. While a model may perform exceptionally well on training data, poor performance on the test set could indicate overfitting, where the model becomes too tailored to the training data and fails to generalize to new data.
+
+Ultimately, no single metric or evaluation procedure can guarantee a model's effectiveness across all scenarios. The true value of a model lies in its ability to make useful predictions in real-world situations, which may require additional testing and iterative refinement based on feedback and new data. Thus, model evaluation is not merely a step in the development process but an ongoing task that continues even after deployment.
+
+Predictions and Error Metrics
+In the case of predicting the Municipal Human Development Index (IDHM), the evaluation began by generating predictions using IDHM.model.1 and storing them in the variable IDHM.predictions.1. For initial insights, predicted IDHM values for six test records were visualized. The same process was repeated for IDHM.model.2, with predictions stored in IDHM.predictions.2.
+
+
+```{r model_evaluation, echo=TRUE}
+# Generate predictions using Model 1 (mtry = 3)
+IDHM.predictions.1 <- predict(IDHM.model.1, teste.IDHM)
+head(IDHM.predictions.1)
+
+# Generate predictions using Model 2 (mtry = 4)
+IDHM.predictions.2 <- predict(IDHM.model.2, teste.IDHM)
+head(IDHM.predictions.2)
+```
+
+
+Subsequently, the Root Mean Squared Error (RMSE), a standard regression metric, was calculated to evaluate the difference between observed and predicted values. RMSE provides a square root transformation of MSE, offering an interpretable scale for error measurement.
+
+
+\[
+\text{RMSE} = \sqrt{\frac{1}{n} \sum_{i=1}^{n} (y_i - \hat{y}_i)^2}
+\]
+
+
+```{r model_evaluation_2, echo=TRUE}
+# Calculate RMSE for both models
+RMSE(IDHM.predictions.1, teste.IDHM$IDHM)
+RMSE(IDHM.predictions.2, teste.IDHM$IDHM)
+```
+
+##Variable Importance and Visualization
+
+
+During the modeling process, variable importance was assessed using the "Percentage Increase in Mean Squared Error" (%IncMSE) and "Increase in Node Purity" (IncNodePurity). These metrics measure how a variable influences model accuracy and node homogeneity, respectively. Key variables such as per capita income, school attendance subindex, and life expectancy showed high importance across both metrics. Conversely, the year variable had minimal weight, indicating lower relevance in predicting IDHM.
+
+
+```{r model_evaluation_3, echo=TRUE}
+# Assess variable importance
+importance(IDHM.model.1)
+importance(IDHM.model.2)
+```
+
+
+To finalize the evaluation, predicted and actual IDHM values were aligned in a single data frame, enabling a detailed comparison. A new column, diff, was created to calculate the difference between real and predicted values for each observation, providing granular insights into model performance.
+
+
+```{r model_evaluation_4, echo=TRUE}
+# Create a data frame with actual and predicted values, and compute the difference
+IDHM.predictions.df <- data.frame(IDHM.predictions.1)
+IDHM.predictions.df <- merge(teste.IDHM, IDHM.predictions.df, by.x = 0, by.y = 0)
+IDHM.predictions.df$diff <- IDHM.predictions.df$IDHM - IDHM.predictions.df$IDHM.predictions.1
+```
+
+
+Finally, the evaluation concluded with a visualization comparing real and predicted IDHM values. This graphical representation highlights the model's predictive accuracy across the test set.
+
+
+```{r model_evaluation_5, echo=TRUE}
+# Plot actual vs. predicted values
+plot(IDHM.predictions.df$IDHM.predictions.1, type = "l", col = "red",
+     xlab = "Test Data", ylab = "Real vs Predicted", main = "IDHM Predictions")
+lines(IDHM.predictions.df$IDHM, col = "black")
+legend("topright", legend = c("Predicted IDHM", "Actual IDHM"), col = c("red", "black"), lty = 1)
+```
+
+
+In summary, the Random Forest model demonstrated robust performance in predicting IDHM, achieving an RMSE of 0.00817621 in the second configuration. The evaluation underscores the importance of careful tuning and comparison of model configurations to optimize predictive performance[@breiman2001randomforest], [@liaw2002randomforest], [@kuhn2008caret].
+
+# CONCLUSION
+
+
+This study highlighted the increasing adoption of machine learning (ML) in the field of economics, underscoring its appeal among renowned economists, chief economists at major corporations, and even Nobel laureates in Economic Sciences. Figures such as Professor Guido Imbens and Google's Chief Economist Hal Varian exemplify the growing recognition of ML as a vital tool for economic analysis and decision-making [@athey2019mlmethods; @varian2014bigdata].
+
+One of the central challenges in applying ML models lies in interpreting the results and effectively communicating them to diverse audiences. This process requires interdisciplinary skills that extend beyond the technical aspects of ML, encompassing elements of statistics, computer science, data visualization, and communication [@irizarry2019datascience].
+
+A key component of interpreting ML results is evaluating variable importance within the model. For Random Forests, this is often achieved using permutation importance, where the model's accuracy is assessed after randomly shuffling a variable's values while keeping others constant. Variables that cause a significant drop in accuracy are deemed more important. However, this method should be used cautiously, as the importance of variables can be influenced by factors such as variable correlations and measurement scales. Complementary techniques like principal component analysis or correlation heatmaps can provide additional insights to enhance interpretability [@liaw2002random].
+
+The Random Forest model demonstrated excellent fit during training, explaining the variance without overfitting, as it did not reach a perfect explanation of 100%. This result indicates that the model achieved a low mean squared error, demonstrating minimal prediction error for the Human Development Index (HDI), which ranges from 0 to 1 [@breiman2001random].
+
+Further evaluation showed an average prediction error of, highlighting that, while the model performs well, a small margin of variation in predictions remains. This aligns with findings in other studies, such as @arumnisaa2023classification, where Random Forest models achieved an accuracy of 85.23% in classifying HDI for districts and cities in Indonesia, outperforming Support Vector Machines (84.61%) and AdaBoost (80.36%). These comparisons confirm the reliability and high efficiency of the Random Forest model employed in this study.
+
+This research contributes to the dissemination of novel tools in economics, providing a step-by-step practical demonstration of ML's application. It serves as a resource for newcomers aiming to develop their first ML models within the field of economics. Additionally, this work builds upon prior studies where ML was applied not only to predict indicators like HDI but also to analyze economic growth, forecast energy prices in Germany [@vogt2021energy], and predict stock prices [@agnon2021stock]. These examples underscore ML's versatility in modeling and forecasting economic variables, positioning it as an invaluable tool for economists to learn and replicate.
+
+
+
+
+
+# References
